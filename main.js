@@ -1,4 +1,4 @@
-// ——— CIVIL ENGINEERING BACKGROUND ANIMATION ———
+// ——— MARINE HYDRAULICS WAVE & STREAMLINE ANIMATION ———
 const canvas = document.getElementById('bg-canvas');
 const ctx = canvas.getContext('2d');
 
@@ -9,11 +9,12 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// ——— Blueprint Grid ———
+// Scientific Coordinate Grid
 function drawGrid() {
-  const spacing = 60;
-  ctx.strokeStyle = 'rgba(0, 200, 255, 0.03)';
+  const spacing = 80;
+  ctx.strokeStyle = 'rgba(100, 255, 218, 0.025)'; // Faint gold grid lines
   ctx.lineWidth = 0.5;
+  
   for (let x = 0; x < canvas.width; x += spacing) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
@@ -28,178 +29,124 @@ function drawGrid() {
   }
 }
 
-// ——— Floating Structural Elements ———
-class StructuralElement {
+// Hydrodynamic Wave Parameters (Representing Marine Wave Mechanics)
+const waves = [
+  {
+    amplitude: 45,
+    frequency: 0.003,
+    speed: 0.02,
+    phase: 0,
+    yRatio: 0.65, // Positioned in lower third
+    color: 'rgba(100, 255, 218, 0.06)' // Academic Gold
+  },
+  {
+    amplitude: 25,
+    frequency: 0.005,
+    speed: -0.015,
+    phase: Math.PI / 4,
+    yRatio: 0.7,
+    color: 'rgba(0, 191, 165, 0.05)' // Marine Blue
+  },
+  {
+    amplitude: 15,
+    frequency: 0.008,
+    speed: 0.03,
+    phase: Math.PI / 2,
+    yRatio: 0.62,
+    color: 'rgba(100, 255, 218, 0.03)'
+  }
+];
+
+// Draw waves on the canvas
+function drawWaves() {
+  waves.forEach(w => {
+    ctx.beginPath();
+    ctx.strokeStyle = w.color;
+    ctx.lineWidth = 1.5;
+    
+    w.phase += w.speed;
+    const baseY = canvas.height * w.yRatio;
+    
+    for (let x = 0; x < canvas.width; x += 5) {
+      const y = baseY + Math.sin(x * w.frequency + w.phase) * w.amplitude;
+      if (x === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+  });
+}
+
+// Flow Streamline / Water Particle class (representing current flows)
+class FlowStreamline {
   constructor() {
     this.reset();
+    this.x = Math.random() * canvas.width;
   }
 
   reset() {
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
-    this.size = Math.random() * 30 + 15;
-    this.type = Math.floor(Math.random() * 5); // 0=beam, 1=truss, 2=column, 3=arch, 4=ibeam
-    this.opacity = Math.random() * 0.06 + 0.02;
-    this.speedX = (Math.random() - 0.5) * 0.3;
-    this.speedY = (Math.random() - 0.5) * 0.2;
-    this.rotation = Math.random() * Math.PI * 2;
-    this.rotSpeed = (Math.random() - 0.5) * 0.003;
+    this.x = -50;
+    this.yBase = canvas.height * (0.3 + Math.random() * 0.45); // Spread across center
+    this.amplitude = Math.random() * 25 + 10;
+    this.frequency = Math.random() * 0.004 + 0.002;
+    this.phase = Math.random() * Math.PI * 2;
+    this.speedX = Math.random() * 0.6 + 0.3; // Flows left to right
+    this.speedPhase = Math.random() * 0.015 + 0.005;
+    this.length = Math.random() * 60 + 20;
+    this.opacity = Math.random() * 0.12 + 0.04; // Higher opacity for glowing particles
+    this.colorType = Math.random() > 0.5 ? 'gold' : 'blue';
   }
 
   update() {
     this.x += this.speedX;
-    this.y += this.speedY;
-    this.rotation += this.rotSpeed;
-
-    if (this.x < -60 || this.x > canvas.width + 60 ||
-        this.y < -60 || this.y > canvas.height + 60) {
+    this.phase += this.speedPhase;
+    if (this.x > canvas.width + 50) {
       this.reset();
     }
   }
 
   draw() {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.rotation);
-    ctx.strokeStyle = `rgba(0, 200, 255, ${this.opacity})`;
-    ctx.lineWidth = 1;
-
-    const s = this.size;
-
-    switch (this.type) {
-      case 0: // Beam with supports
-        ctx.beginPath();
-        ctx.moveTo(-s, 0);
-        ctx.lineTo(s, 0);
-        ctx.moveTo(-s, 0);
-        ctx.lineTo(-s + 5, 8);
-        ctx.moveTo(-s, 0);
-        ctx.lineTo(-s - 5, 8);
-        ctx.moveTo(s, 0);
-        ctx.lineTo(s + 5, 8);
-        ctx.moveTo(s, 0);
-        ctx.lineTo(s - 5, 8);
-        ctx.stroke();
-        break;
-
-      case 1: // Truss triangle
-        ctx.beginPath();
-        ctx.moveTo(-s, s * 0.5);
-        ctx.lineTo(s, s * 0.5);
-        ctx.lineTo(0, -s * 0.5);
-        ctx.closePath();
-        // Internal members
-        ctx.moveTo(-s * 0.5, s * 0.5);
-        ctx.lineTo(0, -s * 0.5);
-        ctx.moveTo(s * 0.5, s * 0.5);
-        ctx.lineTo(0, -s * 0.5);
-        ctx.moveTo(0, s * 0.5);
-        ctx.lineTo(0, -s * 0.5);
-        ctx.stroke();
-        break;
-
-      case 2: // Column with base
-        ctx.beginPath();
-        ctx.rect(-s * 0.15, -s, s * 0.3, s * 2);
-        ctx.moveTo(-s * 0.4, s);
-        ctx.lineTo(s * 0.4, s);
-        ctx.moveTo(-s * 0.35, -s);
-        ctx.lineTo(s * 0.35, -s);
-        ctx.stroke();
-        break;
-
-      case 3: // Arch
-        ctx.beginPath();
-        ctx.arc(0, s * 0.3, s, Math.PI, 0, false);
-        ctx.moveTo(-s, s * 0.3);
-        ctx.lineTo(-s, s * 0.3 + 10);
-        ctx.moveTo(s, s * 0.3);
-        ctx.lineTo(s, s * 0.3 + 10);
-        ctx.stroke();
-        break;
-
-      case 4: // I-Beam cross section
-        ctx.beginPath();
-        // Top flange
-        ctx.moveTo(-s * 0.6, -s * 0.5);
-        ctx.lineTo(s * 0.6, -s * 0.5);
-        // Bottom flange
-        ctx.moveTo(-s * 0.6, s * 0.5);
-        ctx.lineTo(s * 0.6, s * 0.5);
-        // Web
-        ctx.moveTo(0, -s * 0.5);
-        ctx.lineTo(0, s * 0.5);
-        // Flange thickness
-        ctx.moveTo(-s * 0.6, -s * 0.5);
-        ctx.lineTo(-s * 0.6, -s * 0.35);
-        ctx.moveTo(s * 0.6, -s * 0.5);
-        ctx.lineTo(s * 0.6, -s * 0.35);
-        ctx.moveTo(-s * 0.6, s * 0.5);
-        ctx.lineTo(-s * 0.6, s * 0.35);
-        ctx.moveTo(s * 0.6, s * 0.5);
-        ctx.lineTo(s * 0.6, s * 0.35);
-        ctx.stroke();
-        break;
-    }
-
-    ctx.restore();
-  }
-}
-
-// ——— Floating Particles (construction dust) ———
-class Particle {
-  constructor() {
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
-    this.size = Math.random() * 2 + 0.5;
-    this.opacity = Math.random() * 0.15 + 0.05;
-    this.speedX = (Math.random() - 0.5) * 0.4;
-    this.speedY = Math.random() * -0.3 - 0.1;
-  }
-
-  update() {
-    this.x += this.speedX;
-    this.y += this.speedY;
-    if (this.y < -10) {
-      this.y = canvas.height + 10;
-      this.x = Math.random() * canvas.width;
-    }
-    if (this.x < -10) this.x = canvas.width + 10;
-    if (this.x > canvas.width + 10) this.x = -10;
-  }
-
-  draw() {
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(0, 200, 255, ${this.opacity})`;
-    ctx.fill();
+    const strokeColor = this.colorType === 'gold' 
+      ? `rgba(100, 255, 218, ${this.opacity})`
+      : `rgba(0, 191, 165, ${this.opacity})`;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = Math.random() * 1.5 + 0.5;
+    
+    // Draw horizontal path with flow deflection
+    for (let dx = 0; dx < this.length; dx += 4) {
+      const px = this.x - dx;
+      const py = this.yBase + Math.sin(px * this.frequency + this.phase) * this.amplitude;
+      if (dx === 0) {
+        ctx.moveTo(px, py);
+      } else {
+        ctx.lineTo(px, py);
+      }
+    }
+    ctx.stroke();
   }
 }
 
-// Create elements
-const elements = [];
-const particles = [];
-const elementCount = Math.min(12, Math.floor(window.innerWidth / 120));
-const particleCount = Math.min(40, Math.floor(window.innerWidth / 30));
+// Instantiate streamlines
+const streamlines = [];
+const streamlineCount = Math.min(30, Math.floor(window.innerWidth / 40));
+for (let i = 0; i < streamlineCount; i++) {
+  streamlines.push(new FlowStreamline());
+}
 
-for (let i = 0; i < elementCount; i++) elements.push(new StructuralElement());
-for (let i = 0; i < particleCount; i++) particles.push(new Particle());
-
-// ——— Animation Loop ———
+// Animation loop
 function animateBg() {
   requestAnimationFrame(animateBg);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+  
   drawGrid();
-
-  elements.forEach(el => {
-    el.update();
-    el.draw();
-  });
-
-  particles.forEach(p => {
-    p.update();
-    p.draw();
+  drawWaves();
+  
+  streamlines.forEach(stream => {
+    stream.update();
+    stream.draw();
   });
 }
 animateBg();
@@ -266,10 +213,11 @@ const typedTextSpan = document.querySelector('.typed-text');
 const cursorSpan = document.querySelector('.cursor-blink');
 
 const textArray = [
-  "Final-Year Civil Engineering Student · UET Taxila",
-  "Proficient in Primavera P6, AutoCAD & Revit",
-  "Expertise in ETABS, SAP2000 & SAFE",
-  "Experienced with Plan Swift & MATLAB"
+  "Civil & Hydraulics Engineer | CSC Scholar",
+  "MSc Scholar — Tianjin University, China",
+  "Research Focus: Durability of Port & Offshore Structures",
+  "Seeking PhD Placements & Doctoral Opportunities",
+  "Expertise in ANSYS Fluent, Abaqus FEA, Python & MATLAB"
 ];
 const typingDelay = 100;
 const erasingDelay = 50;
@@ -321,3 +269,426 @@ if (backToTop) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
+
+// Circular Skills Progress Bars Animation
+document.addEventListener("DOMContentLoaded", () => {
+  const circles = document.querySelectorAll(".skill-circle-wrap");
+  const animateCircles = () => {
+    circles.forEach(circle => {
+      const percent = circle.getAttribute("data-percent");
+      const progressCircle = circle.querySelector(".progress");
+      if (progressCircle) {
+        const radius = 32;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (percent / 100) * circumference;
+        progressCircle.style.strokeDasharray = `${circumference}`;
+        progressCircle.style.strokeDashoffset = `${offset}`;
+      }
+    });
+  };
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCircles();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  const skillsSection = document.getElementById("about");
+  if (skillsSection) {
+    observer.observe(skillsSection);
+  } else {
+    animateCircles();
+  }
+
+  /* ── Contact Form Controller ── */
+  const form = document.getElementById("contactForm");
+  const toast = document.getElementById("toast");
+
+  function showToast(msg, type) {
+    if (toast) {
+      toast.textContent = msg;
+      toast.className = "toast " + type + " show";
+      setTimeout(() => toast.classList.remove("show"), 4000);
+    }
+  }
+
+  function validateField(input) {
+    const err = input.parentElement.querySelector(".form-error");
+    if (!input.value.trim()) {
+      input.classList.add("error");
+      if (err) err.classList.add("show");
+      return false;
+    }
+    input.classList.remove("error");
+    if (err) err.classList.remove("show");
+    return true;
+  }
+
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      let valid = true;
+      form.querySelectorAll("[required]").forEach((f) => {
+        if (!validateField(f)) valid = false;
+      });
+      if (!valid) return;
+
+      const btn = form.querySelector(".form-submit");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-spinner"></span> Sending…';
+
+      // Simulate sending delay
+      setTimeout(() => {
+        showToast("Message sent successfully! ✓", "success");
+        // Hide standard inputs and display success message
+        form.querySelector(".contact-divider").style.display = "none";
+        form.querySelectorAll(".form-row").forEach(el => el.style.display = "none");
+        form.querySelector(".form-msg-wrap").style.display = "none";
+        form.querySelector(".form-submit-wrap").style.display = "none";
+        document.getElementById("formSuccess").style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Send Message";
+      }, 1500);
+    });
+
+    form.querySelectorAll("[required]").forEach((f) => {
+      f.addEventListener("blur", () => validateField(f));
+      f.addEventListener("input", () => {
+        if (f.classList.contains("error")) validateField(f);
+      });
+    });
+  }
+
+  /* ── Hamburger Mobile Navigation Toggler ── */
+  const hamburger = document.getElementById("hamburger");
+  const navLinks = document.getElementById("navLinks");
+  const closeBtn = document.getElementById("closeBtn");
+
+  if (hamburger && navLinks) {
+    hamburger.addEventListener("click", () => {
+      navLinks.classList.add("active");
+    });
+  }
+  if (closeBtn && navLinks) {
+    closeBtn.addEventListener("click", () => {
+      navLinks.classList.remove("active");
+    });
+  }
+  if (navLinks) {
+    navLinks.querySelectorAll("a").forEach((a) => {
+      a.addEventListener("click", () => {
+        navLinks.classList.remove("active");
+      });
+    });
+  }
+});
+
+// Phone Picker IIFE Dropdown script
+(function () {
+  "use strict";
+  var C = [
+    ["Afghanistan", "93", "af"],
+    ["Albania", "355", "al"],
+    ["Algeria", "213", "dz"],
+    ["Andorra", "376", "ad"],
+    ["Angola", "244", "ao"],
+    ["Argentina", "54", "ar"],
+    ["Armenia", "374", "am"],
+    ["Australia", "61", "au"],
+    ["Austria", "43", "at"],
+    ["Azerbaijan", "994", "az"],
+    ["Bahrain", "973", "bh"],
+    ["Bangladesh", "880", "bd"],
+    ["Belarus", "375", "by"],
+    ["Belgium", "32", "be"],
+    ["Belize", "501", "bz"],
+    ["Benin", "229", "bj"],
+    ["Bhutan", "975", "bt"],
+    ["Bolivia", "591", "bo"],
+    ["Bosnia", "387", "ba"],
+    ["Brazil", "55", "br"],
+    ["Brunei", "673", "bn"],
+    ["Bulgaria", "359", "bg"],
+    ["Burkina Faso", "226", "bf"],
+    ["Cambodia", "855", "kh"],
+    ["Cameroon", "237", "cm"],
+    ["Canada", "1", "ca"],
+    ["Chile", "56", "cl"],
+    ["China", "86", "cn"],
+    ["Colombia", "57", "co"],
+    ["Congo", "243", "cd"],
+    ["Costa Rica", "506", "cr"],
+    ["Croatia", "385", "hr"],
+    ["Cuba", "53", "cu"],
+    ["Cyprus", "357", "cy"],
+    ["Czech Republic", "420", "cz"],
+    ["Denmark", "45", "dk"],
+    ["Ecuador", "593", "ec"],
+    ["Egypt", "20", "eg"],
+    ["El Salvador", "503", "sv"],
+    ["Estonia", "372", "ee"],
+    ["Ethiopia", "251", "et"],
+    ["Finland", "358", "fi"],
+    ["France", "33", "fr"],
+    ["Georgia", "995", "ge"],
+    ["Germany", "49", "de"],
+    ["Ghana", "233", "gh"],
+    ["Greece", "30", "gr"],
+    ["Guatemala", "502", "gt"],
+    ["Honduras", "504", "hn"],
+    ["Hong Kong", "852", "hk"],
+    ["Hungary", "36", "hu"],
+    ["Iceland", "354", "is"],
+    ["India", "91", "in"],
+    ["Indonesia", "62", "id"],
+    ["Iran", "98", "ir"],
+    ["Iraq", "964", "iq"],
+    ["Ireland", "353", "ie"],
+    ["Italy", "39", "it"],
+    ["Jamaica", "1876", "jm"],
+    ["Japan", "81", "jp"],
+    ["Jordan", "962", "jo"],
+    ["Kazakhstan", "7", "kz"],
+    ["Kenya", "254", "ke"],
+    ["Kuwait", "965", "kw"],
+    ["Kyrgyzstan", "996", "kg"],
+    ["Latvia", "371", "lv"],
+    ["Lebanon", "961", "lb"],
+    ["Libya", "218", "ly"],
+    ["Lithuania", "370", "lt"],
+    ["Luxembourg", "352", "lu"],
+    ["Malaysia", "60", "my"],
+    ["Maldives", "960", "mv"],
+    ["Mali", "223", "ml"],
+    ["Malta", "356", "mt"],
+    ["Mexico", "52", "mx"],
+    ["Moldova", "373", "md"],
+    ["Mongolia", "976", "mn"],
+    ["Morocco", "212", "ma"],
+    ["Mozambique", "258", "mz"],
+    ["Myanmar", "95", "mm"],
+    ["Nepal", "977", "np"],
+    ["Netherlands", "31", "nl"],
+    ["New Zealand", "64", "nz"],
+    ["Nicaragua", "505", "ni"],
+    ["Nigeria", "234", "ng"],
+    ["North Korea", "850", "kp"],
+    ["Norway", "47", "no"],
+    ["Oman", "968", "om"],
+    ["Pakistan", "92", "pk"],
+    ["Palestine", "970", "ps"],
+    ["Panama", "507", "pa"],
+    ["Paraguay", "595", "py"],
+    ["Peru", "51", "pe"],
+    ["Philippines", "63", "ph"],
+    ["Poland", "48", "pl"],
+    ["Portugal", "351", "pt"],
+    ["Qatar", "974", "qa"],
+    ["Romania", "40", "ro"],
+    ["Russia", "7", "ru"],
+    ["Rwanda", "250", "rw"],
+    ["Saudi Arabia", "966", "sa"],
+    ["Senegal", "221", "sn"],
+    ["Serbia", "381", "rs"],
+    ["Singapore", "65", "sg"],
+    ["Slovakia", "421", "sk"],
+    ["Slovenia", "386", "si"],
+    ["Somalia", "252", "so"],
+    ["South Africa", "27", "za"],
+    ["South Korea", "82", "kr"],
+    ["Spain", "34", "es"],
+    ["Sri Lanka", "94", "lk"],
+    ["Sudan", "249", "sd"],
+    ["Sweden", "46", "se"],
+    ["Switzerland", "41", "ch"],
+    ["Syria", "963", "sy"],
+    ["Taiwan", "886", "tw"],
+    ["Tajikistan", "992", "tj"],
+    ["Tanzania", "255", "tz"],
+    ["Thailand", "66", "th"],
+    ["Tunisia", "216", "tn"],
+    ["Turkey", "90", "tr"],
+    ["Turkmenistan", "993", "tm"],
+    ["Uganda", "256", "ug"],
+    ["Ukraine", "380", "ua"],
+    ["UAE", "971", "ae"],
+    ["United Kingdom", "44", "gb"],
+    ["United States", "1", "us"],
+    ["Uruguay", "598", "uy"],
+    ["Uzbekistan", "998", "uz"],
+    ["Venezuela", "58", "ve"],
+    ["Vietnam", "84", "vn"],
+    ["Yemen", "967", "ye"],
+    ["Zambia", "260", "zm"],
+    ["Zimbabwe", "263", "zw"],
+  ];
+  var flagBtn = document.getElementById("phoneFlagBtn"),
+    flagImgEl = document.getElementById("selectedFlagImg"),
+    codeEl = document.getElementById("selectedCode"),
+    phoneEl = document.getElementById("phone");
+  if (!flagBtn) return;
+  var selected = null,
+    popup = null,
+    isOpen = false;
+  for (var i = 0; i < C.length; i++) {
+    if (C[i][2] === "pk") {
+      selected = C[i];
+      break;
+    }
+  }
+  function flagSrc(iso) {
+    return "https://flagcdn.com/w40/" + iso + ".png";
+  }
+  function createPopup() {
+    popup = document.createElement("div");
+    popup.className = "phone-popup";
+    popup.setAttribute("role", "dialog");
+    popup.setAttribute("aria-label", "Select country code");
+    var sw = document.createElement("div");
+    sw.className = "phone-popup-search";
+    var si = document.createElement("input");
+    si.type = "text";
+    si.className = "phone-popup-search-input";
+    si.placeholder = "Search country or code...";
+    sw.appendChild(si);
+    popup.appendChild(sw);
+    var le = document.createElement("div");
+    le.className = "phone-popup-list";
+    le.setAttribute("role", "listbox");
+    popup.appendChild(le);
+    document.body.appendChild(popup);
+    var db;
+    si.addEventListener("input", function () {
+      clearTimeout(db);
+      db = setTimeout(function () {
+        renderList(le, si.value);
+      }, 100);
+    });
+    si.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        doClose();
+        flagBtn.focus();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        var f = le.querySelector(".phone-popup-item");
+        if (f) f.focus();
+      }
+    });
+    le.addEventListener("click", function (e) {
+      var item = e.target.closest(".phone-popup-item");
+      if (item) doSelect(item.getAttribute("data-iso"));
+    });
+    le.addEventListener("keydown", function (e) {
+      var items = le.querySelectorAll(".phone-popup-item");
+      var arr = Array.prototype.slice.call(items);
+      var idx = arr.indexOf(document.activeElement);
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (idx < arr.length - 1) arr[idx + 1].focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (idx > 0) arr[idx - 1].focus();
+        else si.focus();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (idx >= 0) doSelect(arr[idx].getAttribute("data-iso"));
+      } else if (e.key === "Escape") {
+        doClose();
+        flagBtn.focus();
+      }
+    });
+  }
+  function renderList(le, q) {
+    q = (q || "").toLowerCase().replace(/^\+/, "").trim();
+    var filtered = q
+      ? C.filter(function (c) {
+        return (
+          c[0].toLowerCase().indexOf(q) !== -1 || c[1].indexOf(q) === 0
+        );
+      })
+      : C;
+    if (!filtered.length) {
+      le.innerHTML =
+        '<div class="phone-popup-empty">No country found</div>';
+      return;
+    }
+    var html = "";
+    for (var i = 0; i < filtered.length; i++) {
+      var c = filtered[i],
+        sc = selected && c[2] === selected[2] ? " selected" : "";
+      html +=
+        '<div class="phone-popup-item' +
+        sc +
+        '" role="option" aria-selected="' +
+        (sc ? "true" : "false") +
+        '" data-iso="' +
+        c[2] +
+        '" tabindex="0"><img class="flag-img" src="' +
+        flagSrc(c[2]) +
+        '" alt="" /><span class="pp-name">' +
+        c[0] +
+        '</span><span class="pp-code">+' +
+        c[1] +
+        "</span></div>";
+    }
+    le.innerHTML = html;
+  }
+  function positionPopup() {
+    popup.style.left = "50%";
+    popup.style.top = "50%";
+    popup.style.transform = "translate(-50%, -50%)";
+  }
+  function doSelect(iso) {
+    for (var i = 0; i < C.length; i++) {
+      if (C[i][2] === iso) {
+        selected = C[i];
+        flagImgEl.src = flagSrc(iso);
+        flagImgEl.alt = C[i][0];
+        codeEl.textContent = "+" + C[i][1];
+        doClose();
+        setTimeout(function () {
+          phoneEl.focus();
+        }, 50);
+        return;
+      }
+    }
+  }
+  function doOpen() {
+    if (isOpen) return;
+    if (!popup) createPopup();
+    isOpen = true;
+    popup.querySelector(".phone-popup-search-input").value = "";
+    renderList(popup.querySelector(".phone-popup-list"), "");
+    positionPopup();
+    popup.classList.add("open");
+    flagBtn.classList.add("open");
+    flagBtn.setAttribute("aria-expanded", "true");
+    setTimeout(function () {
+      popup.querySelector(".phone-popup-search-input").focus();
+    }, 100);
+  }
+  function doClose() {
+    if (!isOpen) return;
+    isOpen = false;
+    popup.classList.remove("open");
+    flagBtn.classList.remove("open");
+    flagBtn.setAttribute("aria-expanded", "false");
+  }
+  flagBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    isOpen ? doClose() : doOpen();
+  });
+  document.addEventListener("click", function (e) {
+    if (isOpen && !popup.contains(e.target) && e.target !== flagBtn)
+      doClose();
+  });
+  window.addEventListener("resize", function () {
+    if (isOpen) positionPopup();
+  });
+})();
